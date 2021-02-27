@@ -1,23 +1,45 @@
+var koaltionen_party_colors = [
+  'black',
+  'red',
+  'green',
+  'crimson',
+  'yellow',
+  'blue',
+  'orange',
+  'brown',
+  'purple',
+  'pink',
+  'chocolate',
+  'darkgreen',
+  'darkblue',
+  'darkmagenta',
+  'lawngreen',
+  'turquoise'
+];
+
 class Partei
 {
   name : string;
   prozent : number;
+  colorindex : number;
 
-  constructor(name : string, prozent : number)
+  constructor(name : string, prozent : number, colorindex : number)
   {
     this.name = name;
     this.prozent = prozent;
+    this.colorindex = colorindex;
   }
 }
 
 function exampleParteiData() : Partei[]
 {
   return [
-    new Partei("CDU", 22),
-    new Partei("Linke", 31),
-    new Partei("AfD", 23),
-    new Partei("Grüne", 8),
-    new Partei("FDP", 6)
+    new Partei("CDU", 22, 0),
+    new Partei("Grüne", 8, 2),
+    new Partei("SPD", 7, 1),
+    new Partei("Linke", 31, 3),
+    new Partei("AfD", 23, 5),
+    new Partei("FDP", 6, 4)
   ];
 }
 
@@ -229,7 +251,16 @@ class KoasSite
     {
       let tr = table.appendChild(document.createElement('tr'));
       let td0 = tr.appendChild(document.createElement('td'));
-      td0.innerText = 'Farbe';
+      let selectcol = td0.appendChild(document.createElement('select'));
+      selectcol.id = this.inputdivid + '_farbe_'+i;
+      for(let c = 0; c < koaltionen_party_colors.length; ++c)
+      {
+        let optcol = selectcol.appendChild(document.createElement('option'));
+        optcol.value = c.toString();
+        optcol.text = koaltionen_party_colors[c];
+        if(startdata[i].colorindex == c)
+          optcol.selected = true;
+      }
 
       let td1 = tr.appendChild(document.createElement('td'));
       let inputname = td1.appendChild(document.createElement('input'));
@@ -297,11 +328,16 @@ class KoasSite
     let outputdiv = document.getElementById(this.outputdivid);
 
     let ppl = new ParteiList();
-    let e_partei : HTMLInputElement, e_prozent : HTMLInputElement;
+    let e_partei : HTMLInputElement, e_prozent : HTMLInputElement, e_farbe : HTMLSelectElement;
     for(let i = 0; e_prozent = <HTMLInputElement>document.getElementById(this.inputdivid + '_prozent_'+i); ++i)
     {
       e_partei = <HTMLInputElement>document.getElementById(this.inputdivid + '_partei_'+i);
-      ppl.list.push(new Partei(e_partei.value, Number(e_prozent.value.replace(/,/, '.'))));
+      e_farbe = <HTMLSelectElement>document.getElementById(this.inputdivid + '_farbe_'+i);
+      ppl.list.push(new Partei(
+        e_partei.value,
+        Number(e_prozent.value.replace(/,/, '.')),
+        Number(e_farbe.value)
+      ));
     }
 
     if(! ppl.scaleProz())
@@ -360,6 +396,7 @@ class KoasSite
         for(let i of koa.indice)
         {
           const pw = barwidth * coas.partylist.list[i].prozent;
+          ctx.fillStyle = koaltionen_party_colors[coas.partylist.list[i].colorindex];
           ctx.fillRect(x, y, pw, barheight);
           x += pw;
         }
@@ -367,6 +404,7 @@ class KoasSite
         ctx.rect(0, y, barwidth, barheight);
         ctx.stroke();
 
+        ctx.fillStyle = 'black';
         ctx.fillText(koa.humanReadableDescription(coas.partylist), barwidth + xdescrdist, y + barheight - fontdescrheight/2);
 
         y += barheight + ybardistance;
@@ -385,11 +423,11 @@ class KoasSite
     drawkoas(yafterkoas + ynonkoabardist, coas.nonkoas);
 
     // TODO: share link
-    // TODO: dont pass indice, but parties
-    // TODO: also pass color
-    // TODO: add nice color-choser
+    // TODO: add nice color-choser. inspiration for colors: https://htmlcolorcodes.com/color-names/
     // TODO: sort parties by percentage
     // TODO: upload and add online-link
+    // TODO: plus minus buttons (add or remove party)
+    // TODO: set viewport (700px?)
    
     // outputdiv.innerText = JSON.stringify(coas.koas) + "\n" + JSON.stringify(coas.nonkoas);
     outputdiv.appendChild(document.createElement('hr'));
