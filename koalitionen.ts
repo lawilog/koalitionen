@@ -1,29 +1,29 @@
-class PartProz
+class Partei
 {
-  partei : string;
+  name : string;
   prozent : number;
 
-  constructor(partei : string, prozent : number)
+  constructor(name : string, prozent : number)
   {
-    this.partei = partei;
+    this.name = name;
     this.prozent = prozent;
   }
 }
 
-function examplePartProzData() : PartProz[]
+function exampleParteiData() : Partei[]
 {
   return [
-    new PartProz("CDU", 22),
-    new PartProz("Linke", 31),
-    new PartProz("AfD", 23),
-    new PartProz("Grüne", 8),
-    new PartProz("FDP", 6)
+    new Partei("CDU", 22),
+    new Partei("Linke", 31),
+    new Partei("AfD", 23),
+    new Partei("Grüne", 8),
+    new Partei("FDP", 6)
   ];
 }
 
-class PartProzList
+class ParteiList
 {
-  list : PartProz[];
+  list : Partei[];
 
   constructor()
   {
@@ -32,17 +32,22 @@ class PartProzList
 
   fillCurrentUmfragen()
   {
-    this.list = examplePartProzData();
+    this.list = exampleParteiData();
   }
 
-  scaleProz()
+  scaleProz() : boolean
   {
     let sum = 0;
     for(let p of this.list)
       sum += p.prozent;
     
+    if(isNaN(sum))
+      return false;
+    
     for(let p of this.list)
       p.prozent /= sum;
+    
+    return true;
   }
 
   correct5PerzLimit()
@@ -59,48 +64,71 @@ class PartProzList
   print()
   {
     for(let p of this.list)
-      console.log((p.prozent*100).toFixed(1), '%', p.partei);
+      console.log((p.prozent*100).toFixed(1), '%', p.name);
   }
 }
 
-interface Coalition
+class Coalition
 {
   sumproz : number;
   indice : number[];
+
+  constructor(sumproz : number)
+  {
+    this.sumproz = sumproz;
+    this.indice = [];
+  }
+
+  humanReadableDescription(partylist : ParteiList) : string
+  {
+    let str = this.sumproz.toFixed(1) + '%: ';
+    let first = true;
+    for(let j = 0; j < this.indice.length; ++j)
+    {
+      if(first)
+        first = false;
+      else
+        str += ' + ';
+      
+      const i = this.indice[j];
+      str += partylist.list[i].name;
+    }
+    return str;
+  }
 }
 
 class PossibleCoalitions
 {
-  umfragen : PartProzList;
+  partylist : ParteiList;
   koas : Coalition[];
   nonkoas : Coalition[];
 
-  constructor(umfragen : PartProzList)
+  constructor(partylist : ParteiList)
   {
-    this.umfragen = umfragen;
+    this.partylist = partylist;
     this.koas = [];
     this.nonkoas = [];
 
-    this.umfragen.removeZeros();
+    this.partylist.removeZeros();
 
-    let b = new Array(umfragen.list.length);
-    for(let i = 0; i < umfragen.list.length; ++i)
+    let b = new Array(partylist.list.length);
+    for(let i = 0; i < partylist.list.length; ++i)
       b[i] = false;
     
     b[0] = true; // actually, dont try empty subset
     do
     {
       let sumpro = 0;
-      for(let i = 0; i < umfragen.list.length; ++i)
+      for(let i = 0; i < partylist.list.length; ++i)
         if(b[i])
-          sumpro += umfragen.list[i].prozent;
+          sumpro += partylist.list[i].prozent;
       
       if(sumpro >= 0.5)
       {
         let every_needed = true;
-        for(let i = 0; i < umfragen.list.length; ++i)
+        for(let i = 0; i < partylist.list.length; ++i)
         {
-          if(b[i] && sumpro - umfragen.list[i].prozent >= 0.5)
+          if(b[i] && sumpro - partylist.list[i].prozent >= 0.5)
           {
             every_needed = false;
             break;
@@ -109,11 +137,8 @@ class PossibleCoalitions
         
         if(every_needed)
         {
-          let koa : Coalition = {
-            sumproz: 100 * sumpro,
-            indice : []
-          };
-          for(let i = 0; i < umfragen.list.length; ++i)
+          let koa = new Coalition(100 * sumpro);
+          for(let i = 0; i < partylist.list.length; ++i)
           {
             if(b[i])
               koa.indice.push(i);
@@ -123,11 +148,8 @@ class PossibleCoalitions
       }
       else
       {
-        let nonkoa : Coalition = {
-          sumproz: 100 * sumpro,
-          indice : []
-        };
-        for(let i = 0; i < umfragen.list.length; ++i)
+        let nonkoa = new Coalition(100 * sumpro);
+        for(let i = 0; i < partylist.list.length; ++i)
         {
           if(b[i])
             nonkoa.indice.push(i);
@@ -137,12 +159,12 @@ class PossibleCoalitions
       
       // next combination:
       let i = 0;
-      for(; i < umfragen.list.length; ++i)
+      for(; i < partylist.list.length; ++i)
       {
         if(b[i]) b[i] = false;
         else {b[i] = true; break;}
       }
-      if(i == umfragen.list.length)
+      if(i == partylist.list.length)
         break;
       
     } while(true);
@@ -161,21 +183,7 @@ class PossibleCoalitions
         return;
       }
       for(let koa of ks)
-      {
-        let str = koa.sumproz.toFixed(1) + '%: ';
-        let first = true;
-        for(let j = 0; j < koa.indice.length; ++j)
-        {
-          if(first)
-            first = false;
-          else
-            str += ' + ';
-          
-          const i = koa.indice[j];
-          str += this.umfragen.list[i].partei;
-        }
-        console.log(str);
-      }
+        console.log(koa.humanReadableDescription(this.partylist));
     };
     console.log('Rechnerisch mögliche Koaltionen:');
     pr(this.koas);
@@ -184,7 +192,7 @@ class PossibleCoalitions
   }
 }
 
-/* let ppl = new PartProzList();
+/* let ppl = new ParteiList();
 ppl.fillCurrentUmfragen();
 console.log('Nach 5%-Hürde Verteilung:');
 ppl.scaleProz();
@@ -216,7 +224,7 @@ class KoasSite
       th.innerText = h;
     });
 
-    const startdata = examplePartProzData();
+    const startdata = exampleParteiData();
     for(let i = 0; i < startdata.length; ++i)
     {
       let tr = table.appendChild(document.createElement('tr'));
@@ -228,7 +236,7 @@ class KoasSite
       inputname.type = 'text';
       inputname.id = this.inputdivid + '_partei_'+i;
       inputname.size = 10;
-      inputname.value = startdata[i].partei;
+      inputname.value = startdata[i].name;
 
       let td2 = tr.appendChild(document.createElement('td'));
       let inputproz = td2.appendChild(document.createElement('input'));
@@ -286,16 +294,21 @@ class KoasSite
 
   recalcAndShow()
   {
-    let ppl = new PartProzList();
+    let outputdiv = document.getElementById(this.outputdivid);
+
+    let ppl = new ParteiList();
     let e_partei : HTMLInputElement, e_prozent : HTMLInputElement;
     for(let i = 0; e_prozent = <HTMLInputElement>document.getElementById(this.inputdivid + '_prozent_'+i); ++i)
     {
       e_partei = <HTMLInputElement>document.getElementById(this.inputdivid + '_partei_'+i);
-      ppl.list.push(new PartProz(e_partei.value, Number(e_prozent.value)));
-      // TODO "4,9" -> "4.9"
+      ppl.list.push(new Partei(e_partei.value, Number(e_prozent.value.replace(/,/, '.'))));
     }
 
-    ppl.scaleProz();
+    if(! ppl.scaleProz())
+    {
+      outputdiv.innerText = 'Bitte nur Zahlen als Eingabe verwenden.';
+      return;
+    }
 
     const correct5 = (<HTMLInputElement>document.getElementById(this.inputdivid + 'correct5')).checked;
     if(correct5)
@@ -313,9 +326,72 @@ class KoasSite
     }
 
     let coas = new PossibleCoalitions(ppl);
+    coas.print();
 
-    let outputdiv = document.getElementById(this.outputdivid);
-    outputdiv.innerText = JSON.stringify(coas.koas) + "\n" + JSON.stringify(coas.nonkoas);
+    outputdiv.innerHTML = '';
+    let outcan = outputdiv.appendChild(document.createElement('canvas'));
+    outcan.id = this.outputdivid + '_canvas';
+    const barwidth = 400;
+    const descrwidth = 300;
+    const barheight = 20;
+    const ybarstart = 30;
+    const ybardistance = 10;
+    const ynonkoadist = 30;
+    const ynonkoabardist = 10;
+    const xdescrdist = 10;
+    const fontdescrheight = 14; // px
+    const fontdescr = fontdescrheight+'px Arial';
+    const fonthead = '20px Arial';
+    outcan.width = barwidth + descrwidth;
+    outcan.height = ybarstart + ynonkoadist + ynonkoabardist + (barheight + ybardistance)*(coas.koas.length + coas.nonkoas.length);
+    let ctx = outcan.getContext('2d');
+
+    ctx.font = fonthead;
+    ctx.fillText('Die Mehrheit hätten:', 0, 20); 
+
+    let drawkoas = (ystart : number, koas : Coalition[]) =>
+    {
+      ctx.font = fontdescr;
+      ctx.lineWidth = 1;
+      let y = ystart;
+      for(let koa of koas)
+      {
+        let x = 0;
+        for(let i of koa.indice)
+        {
+          const pw = barwidth * coas.partylist.list[i].prozent;
+          ctx.fillRect(x, y, pw, barheight);
+          x += pw;
+        }
+        ctx.beginPath();
+        ctx.rect(0, y, barwidth, barheight);
+        ctx.stroke();
+
+        ctx.fillText(koa.humanReadableDescription(coas.partylist), barwidth + xdescrdist, y + barheight - fontdescrheight/2);
+
+        y += barheight + ybardistance;
+      }
+
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(barwidth / 2, ystart);
+      ctx.lineTo(barwidth / 2, ystart + (barheight + ybardistance) * koas.length - ybardistance);
+      ctx.stroke(); 
+    };
+    drawkoas(ybarstart, coas.koas);
+    const yafterkoas = ybarstart + (barheight + ybardistance) * coas.koas.length + ynonkoadist;
+    ctx.font = fonthead;
+    ctx.fillText('Keine Mehrheit hätten:', 0, yafterkoas); 
+    drawkoas(yafterkoas + ynonkoabardist, coas.nonkoas);
+
+    // TODO: share link
+    // TODO: dont pass indice, but parties
+    // TODO: also pass color
+    // TODO: add nice color-choser
+    // TODO: sort parties by percentage
+    // TODO: upload and add online-link
+   
+    // outputdiv.innerText = JSON.stringify(coas.koas) + "\n" + JSON.stringify(coas.nonkoas);
     outputdiv.appendChild(document.createElement('hr'));
     let spanfoot = outputdiv.appendChild(document.createElement('span'));
     spanfoot.classList.add('koafootnote');

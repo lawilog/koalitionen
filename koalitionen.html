@@ -6,6 +6,7 @@
 <script src="koalitionen.js"></script>
 <style>
   .koasinput table {border: 0px;}
+  h1, .koasinput td, .koasinput th, .koasinput th {font-family: Arial;}
   .koaignoredparty {color:gray; text-decoration:line-through;}
   .koafootnote, .koafootnote a, .koafootnote a:visited
     {color: gray; font-size:8pt; text-decoration: none;}
@@ -16,7 +17,7 @@
 <h1>Rechnerisch mögliche Mehrheiten</h1>
 <div id="koas_input" class="koasinput"></div>
 <hr/>
-<div id="koas_output" class="koasoutput"></div>
+<div id="koas_output" class="koasoutput">Benötigt JavaScript (ES6).</div>
 <script>
   var koas_site = new KoasSite("koas_input", "koas_output");
   koas_site.build();
