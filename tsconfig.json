@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "removeComments": true,
+    "noImplicitAny": true,
+    "pretty": false,
+    "baseUrl": ".",
+    "traceResolution": false,
+    "lib": ["es6","dom"],
+    "target": "ES6",
+    "outFile": "koalitionen.js",
+    "sourceMap": true,
+  },
+  "files": [
+    "koalitionen.ts",
+  ]
+}
