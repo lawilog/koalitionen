@@ -14,7 +14,8 @@ var koaltionen_party_colors = [
   'darkblue',
   'darkmagenta',
   'lawngreen',
-  'turquoise'
+  'turquoise',
+  'gray'
 ];
 
 class Partei
@@ -37,7 +38,7 @@ function exampleParteiData() : Partei[]
     new Partei("CDU", 22, 0),
     new Partei("Grüne", 8, 2),
     new Partei("SPD", 7, 1),
-    new Partei("Linke", 31, 3),
+    new Partei("Linke", 31, 8),
     new Partei("AfD", 23, 5),
     new Partei("FDP", 6, 4)
   ];
@@ -132,6 +133,7 @@ class PossibleCoalitions
     this.nonkoas = [];
 
     this.partylist.removeZeros();
+    this.partylist.list.sort((a,b) => b.prozent - a.prozent);
 
     let b = new Array(partylist.list.length);
     for(let i = 0; i < partylist.list.length; ++i)
@@ -238,47 +240,8 @@ class KoasSite
   build()
   {
     let inputdiv = document.getElementById(this.inputdivid);
-    let table = inputdiv.appendChild(document.createElement('table'));
-    table.id = this.inputdivid + '_tab';
-    let tr_h = table.appendChild(document.createElement('tr'));
-    ['Farbe', 'Partei', 'Anteil', 'rechnerisch'].forEach(h => {
-      let th = tr_h.appendChild(document.createElement('th'));
-      th.innerText = h;
-    });
-
     const startdata = exampleParteiData();
-    for(let i = 0; i < startdata.length; ++i)
-    {
-      let tr = table.appendChild(document.createElement('tr'));
-      let td0 = tr.appendChild(document.createElement('td'));
-      let selectcol = td0.appendChild(document.createElement('select'));
-      selectcol.id = this.inputdivid + '_farbe_'+i;
-      for(let c = 0; c < koaltionen_party_colors.length; ++c)
-      {
-        let optcol = selectcol.appendChild(document.createElement('option'));
-        optcol.value = c.toString();
-        optcol.text = koaltionen_party_colors[c];
-        if(startdata[i].colorindex == c)
-          optcol.selected = true;
-      }
-
-      let td1 = tr.appendChild(document.createElement('td'));
-      let inputname = td1.appendChild(document.createElement('input'));
-      inputname.type = 'text';
-      inputname.id = this.inputdivid + '_partei_'+i;
-      inputname.size = 10;
-      inputname.value = startdata[i].name;
-
-      let td2 = tr.appendChild(document.createElement('td'));
-      let inputproz = td2.appendChild(document.createElement('input'));
-      inputproz.type = 'text';
-      inputproz.id = this.inputdivid + '_prozent_'+i;
-      inputproz.size = 10;
-      inputproz.value = startdata[i].prozent.toString();
-
-      let td3 = tr.appendChild(document.createElement('td'));
-      td3.id = this.inputdivid + '_scaledout_'+i;
-    }
+    this.buildInputTable(startdata);
 
     let correct5 = inputdiv.appendChild(document.createElement('input'));
     correct5.type = 'checkbox';
@@ -290,7 +253,10 @@ class KoasSite
     check5label.htmlFor = correct5.id;
     check5label.innerText = ' 5%-Hürde';
 
-    inputdiv.appendChild(document.createElement('br'));
+    //inputdiv.appendChild(document.createElement('br'));
+    let spandist1 = inputdiv.appendChild(document.createElement('span'));
+    spandist1.innerText = '|';
+    spandist1.className = 'butdist';
 
     let autoupd = inputdiv.appendChild(document.createElement('input'));
     autoupd.type = 'checkbox';
@@ -302,22 +268,122 @@ class KoasSite
     autoupdlabel.htmlFor = autoupd.id;
     autoupdlabel.innerText = ' automatisch neu berechnen';
 
-    inputdiv.appendChild(document.createElement('br'));
+    //inputdiv.appendChild(document.createElement('br'));
+    let spandist2 = inputdiv.appendChild(document.createElement('span'));
+    spandist2.innerText = '|';
+    spandist2.className = 'butdist';
 
     let updbutton = inputdiv.appendChild(document.createElement('button'));
     updbutton.innerText = 'jetzt neu berechnen';
     updbutton.onclick = () => this.recalcAndShow();
 
+    inputdiv.appendChild(document.createElement('br'));
+    let spanextlink = inputdiv.appendChild(document.createElement('span'));
+    spanextlink.classList.add('koafootnote');
+    spanextlink.appendChild(document.createTextNode('Tip: Aktuelle Umfragewerte gibt es bei '));
+    let aext = spanextlink.appendChild(document.createElement('a'));
+    aext.href = 'https://www.wahlrecht.de/umfragen/';
+    aext.text = 'wahlrecht.de';
+    spanextlink.appendChild(document.createTextNode('.'))
+
     this.registerAutorefresh();
+  }
+
+  buildInputTable(partydata : Partei[])
+  {
+    let inputdiv = document.getElementById(this.inputdivid);
+
+    let table = inputdiv.appendChild(document.createElement('table'));
+    table.id = this.inputdivid + '_tab';
+    let tr_h = table.appendChild(document.createElement('tr'));
+    ['+-', 'Farbe', 'Partei', 'Anteil', 'rechnerisch'].forEach(h => {
+      let th = tr_h.appendChild(document.createElement('th'));
+      th.innerText = h;
+    });
+
+    
+    for(let i = 0; i < partydata.length; ++i)
+    {
+      let tr = table.appendChild(document.createElement('tr'));
+      this.buildInputTableRow(tr, i, partydata[i]);
+    }
+    let tr = table.appendChild(document.createElement('tr'));
+    let tdpm = tr.appendChild(document.createElement('td'));
+    let buttom_m = tdpm.appendChild(document.createElement('button'));
+    buttom_m.innerText = '+';
+    buttom_m.onclick = () => this.addRow();
+
+    let tdcol = tr.appendChild(document.createElement('td'));
+    let tdname = tr.appendChild(document.createElement('td'));
+    let tdproz = tr.appendChild(document.createElement('td'));
+    let tdout = tr.appendChild(document.createElement('td'));
+    tdout.innerText = '100%';
+    tdout.style.paddingLeft = '20px';
+    tdout.style.borderTop = 'black 1px solid';
+  }
+
+  buildInputTableRow(tr : HTMLTableRowElement, i : number, party : Partei)
+  {
+    let tdpm = tr.appendChild(document.createElement('td'));
+    let buttom_m = tdpm.appendChild(document.createElement('button'));
+    buttom_m.innerText = '-';
+    buttom_m.onclick = () => this.removeRow(i + 1);
+
+    let tdcol = tr.appendChild(document.createElement('td'));
+    let selectcol = tdcol.appendChild(document.createElement('select'));
+    selectcol.classList.add('farbindex');
+    for(let c = 0; c < koaltionen_party_colors.length; ++c)
+    {
+      let optcol = selectcol.appendChild(document.createElement('option'));
+      optcol.value = c.toString();
+      optcol.text = koaltionen_party_colors[c];
+      if(party.colorindex == c)
+        optcol.selected = true;
+    }
+
+    let tdname = tr.appendChild(document.createElement('td'));
+    let inputname = tdname.appendChild(document.createElement('input'));
+    inputname.type = 'text';
+    inputname.classList.add('parteiname');
+    inputname.size = 10;
+    inputname.value = party.name;
+
+    let tdproz = tr.appendChild(document.createElement('td'));
+    let inputproz = tdproz.appendChild(document.createElement('input'));
+    inputproz.type = 'text';
+    inputproz.classList.add('prozent');
+    inputproz.size = 10;
+    inputproz.value = party.prozent.toString();
+
+    let tdout = tr.appendChild(document.createElement('td'));
+    tdout.classList.add('scaledout');
+  }
+
+  addRow()
+  {
+    let tab = <HTMLTableElement> document.getElementById(this.inputdivid + '_tab');
+    let tr = tab.insertRow(tab.rows.length - 1);
+    this.buildInputTableRow(tr, tab.rows.length, new Partei('', 0, 16));
+    this.registerAutorefresh();
+  }
+
+  removeRow(row_index : number)
+  {
+    let tab = <HTMLTableElement>document.getElementById(this.inputdivid + '_tab');
+    tab.deleteRow(row_index);
+    this.recalcAndShow();
   }
 
   registerAutorefresh()
   {
     const ereg = <HTMLInputElement> document.getElementById(this.inputdivid + 'autoupd');
     const register = ereg.checked;
-    let e_prozent : HTMLInputElement;
-    for(let i = 0; e_prozent = <HTMLInputElement>document.getElementById(this.inputdivid + '_prozent_'+i); ++i)
-      e_prozent.onkeyup = register ? (() => this.recalcAndShow()) : (() => 0);
+    let pes = document.getElementsByClassName('prozent');
+    for(let i = 0; i < pes.length; ++i)
+    {
+      (<HTMLInputElement>pes[i])
+        .onkeyup = register ? (() => this.recalcAndShow()) : (() => 0);
+    }
     
     if(register)
       this.recalcAndShow();
@@ -328,16 +394,19 @@ class KoasSite
     let outputdiv = document.getElementById(this.outputdivid);
 
     let ppl = new ParteiList();
-    let e_partei : HTMLInputElement, e_prozent : HTMLInputElement, e_farbe : HTMLSelectElement;
-    for(let i = 0; e_prozent = <HTMLInputElement>document.getElementById(this.inputdivid + '_prozent_'+i); ++i)
+    const tab = <HTMLTableElement>document.getElementById(this.inputdivid + '_tab');
+    for(let i = 0, row : HTMLTableRowElement; row = tab.rows[i]; i++)
     {
-      e_partei = <HTMLInputElement>document.getElementById(this.inputdivid + '_partei_'+i);
-      e_farbe = <HTMLSelectElement>document.getElementById(this.inputdivid + '_farbe_'+i);
-      ppl.list.push(new Partei(
-        e_partei.value,
-        Number(e_prozent.value.replace(/,/, '.')),
-        Number(e_farbe.value)
-      ));
+      const hn = row.getElementsByClassName('parteiname');
+      const hp = row.getElementsByClassName('prozent');
+      const hc = row.getElementsByClassName('farbindex');
+      if(hn.length == 0 || hp.length == 0 || hc.length == 0)
+        continue;
+
+      const name = (<HTMLInputElement> hn[0]).value;
+      const prozent = Number((<HTMLInputElement> hp[0]).value.replace(/,/, '.'));
+      const colorindex = Number((<HTMLInputElement> hc[0]).value);
+      ppl.list.push(new Partei(name, prozent, colorindex));
     }
 
     if(! ppl.scaleProz())
@@ -350,10 +419,13 @@ class KoasSite
     if(correct5)
       ppl.correct5PerzLimit();
     
-    for(let i = 0; i < ppl.list.length; ++i)
+    for(let i = 1, row : HTMLTableRowElement; row = tab.rows[i]; i++)
     {
-      const perc = 100*ppl.list[i].prozent;
-      let e_scaledout = document.getElementById(this.inputdivid + '_scaledout_'+i);
+      if(i > ppl.list.length)
+        break;
+
+      const perc = 100*ppl.list[i-1].prozent;
+      let e_scaledout = <HTMLElement> row.getElementsByClassName('scaledout')[0];
       e_scaledout.innerText = '→ '+perc.toFixed(1)+' %';
       if(perc == 0)
         e_scaledout.classList.add('koaignoredparty');
@@ -422,14 +494,11 @@ class KoasSite
     ctx.fillText('Keine Mehrheit hätten:', 0, yafterkoas); 
     drawkoas(yafterkoas + ynonkoabardist, coas.nonkoas);
 
-    // TODO: share link
+    // TODO: share-link
     // TODO: add nice color-choser. inspiration for colors: https://htmlcolorcodes.com/color-names/
-    // TODO: sort parties by percentage
     // TODO: upload and add online-link
-    // TODO: plus minus buttons (add or remove party)
-    // TODO: set viewport (700px?)
+    // TODO: set viewport (700px?), check on mobile
    
-    // outputdiv.innerText = JSON.stringify(coas.koas) + "\n" + JSON.stringify(coas.nonkoas);
     outputdiv.appendChild(document.createElement('hr'));
     let spanfoot = outputdiv.appendChild(document.createElement('span'));
     spanfoot.classList.add('koafootnote');
