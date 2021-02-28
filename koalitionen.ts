@@ -1,22 +1,5 @@
-var koaltionen_party_colors = [
-  'black',
-  'red',
-  'green',
-  'crimson',
-  'yellow',
-  'blue',
-  'orange',
-  'brown',
-  'purple',
-  'pink',
-  'chocolate',
-  'darkgreen',
-  'darkblue',
-  'darkmagenta',
-  'lawngreen',
-  'turquoise',
-  'gray'
-];
+var koaltionen_party_colors = 'black red purple green lightblue yellow blue darkorange saddlebrown darkblue crimson turquoise hotpink lawngreen gray'.split(' ');
+// TODO yellow -> #FFF000
 
 class Partei
 {
@@ -36,11 +19,11 @@ function exampleParteiData() : Partei[]
 {
   return [
     new Partei("CDU", 22, 0),
-    new Partei("Grüne", 8, 2),
+    new Partei("Grüne", 8, 3),
     new Partei("SPD", 7, 1),
-    new Partei("Linke", 31, 8),
-    new Partei("AfD", 23, 5),
-    new Partei("FDP", 6, 4)
+    new Partei("Linke", 31, 2),
+    new Partei("AfD", 23, 6),
+    new Partei("FDP", 6, 5)
   ];
 }
 
@@ -327,7 +310,7 @@ class KoasSite
     let tdpm = tr.appendChild(document.createElement('td'));
     let buttom_m = tdpm.appendChild(document.createElement('button'));
     buttom_m.innerText = '-';
-    buttom_m.onclick = () => this.removeRow(i + 1);
+    buttom_m.onclick = () => this.removeRow(tr);
 
     let tdcol = tr.appendChild(document.createElement('td'));
     let selectcol = tdcol.appendChild(document.createElement('select'));
@@ -363,14 +346,15 @@ class KoasSite
   {
     let tab = <HTMLTableElement> document.getElementById(this.inputdivid + '_tab');
     let tr = tab.insertRow(tab.rows.length - 1);
-    this.buildInputTableRow(tr, tab.rows.length, new Partei('', 0, 16));
+    this.buildInputTableRow(tr, tab.rows.length, new Partei('', 0, 14));
     this.registerAutorefresh();
   }
 
-  removeRow(row_index : number)
+  removeRow(tr : HTMLTableRowElement)
   {
-    let tab = <HTMLTableElement>document.getElementById(this.inputdivid + '_tab');
-    tab.deleteRow(row_index);
+    //let tab = <HTMLTableElement>document.getElementById(this.inputdivid + '_tab');
+    //tab.deleteRow(row_index);
+    tr.remove();
     this.recalcAndShow();
   }
 
@@ -380,10 +364,13 @@ class KoasSite
     const register = ereg.checked;
     let pes = document.getElementsByClassName('prozent');
     for(let i = 0; i < pes.length; ++i)
-    {
       (<HTMLInputElement>pes[i])
         .onkeyup = register ? (() => this.recalcAndShow()) : (() => 0);
-    }
+    
+    let fes = document.getElementsByClassName('farbindex');
+    for(let i = 0; i < fes.length; ++i)
+      (<HTMLSelectElement>fes[i])
+        .onchange = register ? (() => this.recalcAndShow()) : (() => 0);
     
     if(register)
       this.recalcAndShow();
@@ -434,7 +421,7 @@ class KoasSite
     }
 
     let coas = new PossibleCoalitions(ppl);
-    coas.print();
+    // coas.print();
 
     outputdiv.innerHTML = '';
     let outcan = outputdiv.appendChild(document.createElement('canvas'));
@@ -495,9 +482,7 @@ class KoasSite
     drawkoas(yafterkoas + ynonkoabardist, coas.nonkoas);
 
     // TODO: share-link
-    // TODO: add nice color-choser. inspiration for colors: https://htmlcolorcodes.com/color-names/
-    // TODO: upload and add online-link
-    // TODO: set viewport (700px?), check on mobile
+    // TODO: add nice color-choser
    
     outputdiv.appendChild(document.createElement('hr'));
     let spanfoot = outputdiv.appendChild(document.createElement('span'));
