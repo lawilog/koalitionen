@@ -202,33 +202,38 @@ class KoasSite {
         tab.id = this.inputdivid + '_tab';
         let row_h = tab.appendChild(document.createElement('div'));
         row_h.className = 'party_table_header';
-        addSpace(row_h, 86);
+        addSpace(row_h, 75);
         row_h.appendChild(document.createElement('span')).innerText = 'Partei';
-        addSpace(row_h, 100);
+        addSpace(row_h, 92);
         row_h.appendChild(document.createElement('span')).innerText = 'Anteil';
         addSpace(row_h, 55);
         row_h.appendChild(document.createElement('span')).innerText = 'rechnerisch';
         for (let i = 0; i < partydata.length; ++i) {
             let row = tab.appendChild(document.createElement('div'));
-            this.buildInputTableRow(row, i, partydata[i]);
+            this.buildInputTableRow(row, partydata[i]);
         }
-        let row = tab.appendChild(document.createElement('div'));
-        let cellpm = row.appendChild(document.createElement('span'));
-        let buttom_m = cellpm.appendChild(document.createElement('button'));
-        buttom_m.innerText = '✚';
-        buttom_m.onclick = () => this.addRow();
-        addSpace(row, 280);
-        let cellout = row.appendChild(document.createElement('span'));
+        let row_f = tab.appendChild(document.createElement('div'));
+        row_f.className = 'party_table_footer';
+        let cellpm = row_f.appendChild(document.createElement('span'));
+        let buttom_p = cellpm.appendChild(document.createElement('span'));
+        buttom_p.className = 'party_button';
+        buttom_p.innerText = '✚';
+        buttom_p.onclick = () => this.addRow();
+        addSpace(row_f, 280);
+        let cellout = row_f.appendChild(document.createElement('span'));
         cellout.innerText = '100 %';
         cellout.style.paddingLeft = '25px';
         cellout.style.paddingRight = '15px';
         cellout.style.borderTop = 'black 1px solid';
     }
-    buildInputTableRow(row, i, party) {
+    buildInputTableRow(row, party) {
         row.className = 'party_row';
-        let buttom_m = row.appendChild(document.createElement('button'));
+        let buttom_m = row.appendChild(document.createElement('span'));
+        buttom_m.className = 'party_button';
         buttom_m.innerText = '✘';
         buttom_m.onclick = () => this.removeRow(row);
+        let strike = row.appendChild(document.createElement('span'));
+        strike.className = 'party_strike';
         const cs = colorChooserSizes();
         let cellcol = row.appendChild(document.createElement('span'));
         cellcol.className = 'party_color_single';
@@ -249,12 +254,10 @@ class KoasSite {
         let inputname = row.appendChild(document.createElement('input'));
         inputname.type = 'text';
         inputname.classList.add('party_name');
-        inputname.size = 10;
         inputname.value = party.name;
         let inputproz = row.appendChild(document.createElement('input'));
         inputproz.type = 'text';
         inputproz.classList.add('party_percent');
-        inputproz.size = 10;
         inputproz.value = party.prozent.toString();
         let spanout = row.appendChild(document.createElement('span'));
         spanout.classList.add('party_scaledout');
@@ -293,8 +296,8 @@ class KoasSite {
     }
     addRow() {
         let tab = document.getElementById(this.inputdivid + '_tab');
-        let row = tab.insertRow(tab.rows.length - 1);
-        this.buildInputTableRow(row, tab.rows.length, new Partei('', 0, 14));
+        let row = tab.insertBefore(document.createElement('div'), tab.getElementsByClassName('party_table_footer')[0]);
+        this.buildInputTableRow(row, new Partei('', 0, 14));
         this.registerAutorefresh();
     }
     removeRow(row) {

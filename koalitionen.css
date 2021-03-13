@@ -1,12 +1,47 @@
 body {background-color: ivory;}
 h1, h2, div, span {font-family: Arial, Helvetica, sans-serif;}
+div, span {font-size: 16px;}
 
 .party_input {position: relative;}
 .party_table {position: relative;}
 .party_table_header {padding-bottom: 5px;}
 .party_table_header span {font-weight: bold;}
 .party_table > div {position: relative; vertical-align:middle;}
-.party_table div button {position: relative; margin-right: 5px;}
+.party_button
+{
+  position: relative;
+  display: inline-block;
+  width:16px;
+  height:16px;
+  line-height: 16px;
+  margin-right: 5px;
+  padding: 5px;
+  border: 1px solid gray;
+  border-radius: 6px;
+  font-size: 12px;
+  background-color: #eeeeee;
+  cursor: pointer;
+  vertical-align: middle;
+  text-align: center;
+}
+.party_button:hover {background-color: #aaaaaa;}
+.party_button:hover + .party_strike {display: inline-block;}
+.party_strike {
+  position: absolute;
+  width:400px;
+  height:15px;
+  border-bottom: 2px solid gray;
+  z-index: 2;
+  display:none;
+}
+
+.party_row input
+{
+  border: 1px solid gray;
+  border-radius: 3px;
+  padding: 5px;
+  font-size: 14px;
+}
 .party_name, .party_percent, .party_scaledout {margin-left: 5px;}
 .party_name {width: 120px;}
 .party_percent {width: 80px;}
