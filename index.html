@@ -6,19 +6,7 @@
 <meta name="author" content="Lars Winterfeld" />
 <title>Rechnerisch mögliche Mehrheiten</title>
 <script src="koalitionen.js"></script>
-<style>
-  body {background-color: ivory;}
-  .koasinput table {border: 0px;}
-  h1, h2, .koasinput td, .koasinput th, .koasinput th
-    {font-family: Arial, Helvetica, sans-serif;}
-  
-  .koaignoredparty {color:gray; text-decoration:line-through;}
-  .butdist {display:inline-block; width: 30px; text-align:center;}
-  .koafootnote, .koafootnote a, .koafootnote a:visited
-    {color: gray; font-size:8pt; text-decoration: none;}
-  
-  .koafootnote a:hover {text-decoration: underline;}
-</style>
+<link rel="stylesheet" href="koalitionen.css" />
 </head>
 <body>
 <h1>Koalitionsrechner</h1>
@@ -29,7 +17,6 @@
 <script>
   var koas_site = new KoasSite("koas_input", "koas_output");
   koas_site.build();
-  //koas_site.recalcAndShow();
 </script>
 </body>
 </html>

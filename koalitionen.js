@@ -1,4 +1,4 @@
-var koaltionen_party_colors = 'black red purple green lightblue yellow blue darkorange saddlebrown darkblue crimson turquoise hotpink lawngreen gray'.split(' ');
+var koaltionen_party_colors = 'black red purple green lightblue #FFF000 blue darkorange saddlebrown darkblue crimson turquoise hotpink lawngreen gray'.split(' ');
 class Partei {
     constructor(name, prozent, colorindex) {
         this.name = name;
@@ -136,6 +136,20 @@ class PossibleCoalitions {
         pr(this.nonkoas);
     }
 }
+function colorChooserSizes() {
+    const boxa = 25;
+    const bordr = boxa / 6;
+    return {
+        boxa: boxa,
+        bordr: bordr,
+        step: boxa + 2 * bordr
+    };
+}
+function addSpace(parent, width) {
+    let space = parent.appendChild(document.createElement('span'));
+    space.style.width = width + 'px';
+    space.style.display = 'inline-block';
+}
 class KoasSite {
     constructor(inputdivid, outputdivid) {
         this.inputdivid = inputdivid;
@@ -143,6 +157,7 @@ class KoasSite {
     }
     build() {
         let inputdiv = document.getElementById(this.inputdivid);
+        inputdiv.classList.add('party_input');
         const startdata = exampleParteiData();
         this.buildInputTable(startdata);
         let correct5 = inputdiv.appendChild(document.createElement('input'));
@@ -182,81 +197,117 @@ class KoasSite {
     }
     buildInputTable(partydata) {
         let inputdiv = document.getElementById(this.inputdivid);
-        let table = inputdiv.appendChild(document.createElement('table'));
-        table.id = this.inputdivid + '_tab';
-        let tr_h = table.appendChild(document.createElement('tr'));
-        ['+-', 'Farbe', 'Partei', 'Anteil', 'rechnerisch'].forEach(h => {
-            let th = tr_h.appendChild(document.createElement('th'));
-            th.innerText = h;
-        });
+        let tab = inputdiv.appendChild(document.createElement('div'));
+        tab.className = 'party_table';
+        tab.id = this.inputdivid + '_tab';
+        let row_h = tab.appendChild(document.createElement('div'));
+        row_h.className = 'party_table_header';
+        addSpace(row_h, 86);
+        row_h.appendChild(document.createElement('span')).innerText = 'Partei';
+        addSpace(row_h, 100);
+        row_h.appendChild(document.createElement('span')).innerText = 'Anteil';
+        addSpace(row_h, 55);
+        row_h.appendChild(document.createElement('span')).innerText = 'rechnerisch';
         for (let i = 0; i < partydata.length; ++i) {
-            let tr = table.appendChild(document.createElement('tr'));
-            this.buildInputTableRow(tr, i, partydata[i]);
+            let row = tab.appendChild(document.createElement('div'));
+            this.buildInputTableRow(row, i, partydata[i]);
         }
-        let tr = table.appendChild(document.createElement('tr'));
-        let tdpm = tr.appendChild(document.createElement('td'));
-        let buttom_m = tdpm.appendChild(document.createElement('button'));
-        buttom_m.innerText = '+';
+        let row = tab.appendChild(document.createElement('div'));
+        let cellpm = row.appendChild(document.createElement('span'));
+        let buttom_m = cellpm.appendChild(document.createElement('button'));
+        buttom_m.innerText = '✚';
         buttom_m.onclick = () => this.addRow();
-        let tdcol = tr.appendChild(document.createElement('td'));
-        let tdname = tr.appendChild(document.createElement('td'));
-        let tdproz = tr.appendChild(document.createElement('td'));
-        let tdout = tr.appendChild(document.createElement('td'));
-        tdout.innerText = '100%';
-        tdout.style.paddingLeft = '20px';
-        tdout.style.borderTop = 'black 1px solid';
+        addSpace(row, 280);
+        let cellout = row.appendChild(document.createElement('span'));
+        cellout.innerText = '100 %';
+        cellout.style.paddingLeft = '25px';
+        cellout.style.paddingRight = '15px';
+        cellout.style.borderTop = 'black 1px solid';
     }
-    buildInputTableRow(tr, i, party) {
-        let tdpm = tr.appendChild(document.createElement('td'));
-        let buttom_m = tdpm.appendChild(document.createElement('button'));
-        buttom_m.innerText = '-';
-        buttom_m.onclick = () => this.removeRow(tr);
-        let tdcol = tr.appendChild(document.createElement('td'));
-        let selectcol = tdcol.appendChild(document.createElement('select'));
-        selectcol.classList.add('farbindex');
-        for (let c = 0; c < koaltionen_party_colors.length; ++c) {
-            let optcol = selectcol.appendChild(document.createElement('option'));
-            optcol.value = c.toString();
-            optcol.text = koaltionen_party_colors[c];
-            if (party.colorindex == c)
-                optcol.selected = true;
-        }
-        let tdname = tr.appendChild(document.createElement('td'));
-        let inputname = tdname.appendChild(document.createElement('input'));
+    buildInputTableRow(row, i, party) {
+        row.className = 'party_row';
+        let buttom_m = row.appendChild(document.createElement('button'));
+        buttom_m.innerText = '✘';
+        buttom_m.onclick = () => this.removeRow(row);
+        const cs = colorChooserSizes();
+        let cellcol = row.appendChild(document.createElement('span'));
+        cellcol.className = 'party_color_single';
+        cellcol.style.width = cs.step + 'px';
+        cellcol.style.height = cs.step + 'px';
+        let hiddencol = row.appendChild(document.createElement('input'));
+        hiddencol.type = 'hidden';
+        hiddencol.classList.add('farbindex');
+        hiddencol.value = party.colorindex.toString();
+        let spancol = this.buildColorItem(cellcol, koaltionen_party_colors[party.colorindex]);
+        let divcol = this.buildColorChooser(cellcol, spancol, hiddencol);
+        divcol.style.zIndex = '2';
+        divcol.style.display = 'none';
+        divcol.style.top = '0px';
+        divcol.style.left = '0px';
+        spancol.onclick = () => { divcol.style.display = 'block'; };
+        divcol.onmouseleave = () => { divcol.style.display = 'none'; };
+        let inputname = row.appendChild(document.createElement('input'));
         inputname.type = 'text';
-        inputname.classList.add('parteiname');
+        inputname.classList.add('party_name');
         inputname.size = 10;
         inputname.value = party.name;
-        let tdproz = tr.appendChild(document.createElement('td'));
-        let inputproz = tdproz.appendChild(document.createElement('input'));
+        let inputproz = row.appendChild(document.createElement('input'));
         inputproz.type = 'text';
-        inputproz.classList.add('prozent');
+        inputproz.classList.add('party_percent');
         inputproz.size = 10;
         inputproz.value = party.prozent.toString();
-        let tdout = tr.appendChild(document.createElement('td'));
-        tdout.classList.add('scaledout');
+        let spanout = row.appendChild(document.createElement('span'));
+        spanout.classList.add('party_scaledout');
+    }
+    buildColorChooser(parent, spandisp, farbindexelem) {
+        const cs = colorChooserSizes();
+        const n_rows = Math.floor(Math.sqrt(koaltionen_party_colors.length));
+        const n_cols = Math.ceil(koaltionen_party_colors.length / n_rows);
+        let divcol = parent.appendChild(document.createElement('div'));
+        divcol.className = 'party_colorchooser';
+        divcol.style.width = n_cols * cs.step + 'px';
+        divcol.style.height = n_rows * cs.step + 'px';
+        for (let i = 0; i < koaltionen_party_colors.length; ++i) {
+            let spancol = this.buildColorItem(divcol, koaltionen_party_colors[i], Math.floor(i / n_cols), Math.floor(i % n_cols));
+            spancol.onclick = () => {
+                spandisp.style.backgroundColor = koaltionen_party_colors[i];
+                divcol.style.display = 'none';
+                farbindexelem.value = i.toString();
+                this.recalcAndShow();
+            };
+        }
+        return divcol;
+    }
+    buildColorItem(parent, color, top = 0, left = 0) {
+        const cs = colorChooserSizes();
+        let spancol = parent.appendChild(document.createElement('span'));
+        spancol.className = 'party_color';
+        spancol.style.top = top * cs.step + 'px';
+        spancol.style.left = left * cs.step + 'px';
+        spancol.style.width = cs.boxa + 'px';
+        spancol.style.height = cs.boxa + 'px';
+        spancol.style.borderWidth = cs.bordr + 'px';
+        spancol.style.borderRadius = (3 * cs.bordr) + 'px';
+        spancol.style.backgroundColor = color;
+        return spancol;
     }
     addRow() {
         let tab = document.getElementById(this.inputdivid + '_tab');
-        let tr = tab.insertRow(tab.rows.length - 1);
-        this.buildInputTableRow(tr, tab.rows.length, new Partei('', 0, 14));
+        let row = tab.insertRow(tab.rows.length - 1);
+        this.buildInputTableRow(row, tab.rows.length, new Partei('', 0, 14));
         this.registerAutorefresh();
     }
-    removeRow(tr) {
-        tr.remove();
+    removeRow(row) {
+        row.remove();
         this.recalcAndShow();
     }
     registerAutorefresh() {
         const ereg = document.getElementById(this.inputdivid + 'autoupd');
         const register = ereg.checked;
-        let pes = document.getElementsByClassName('prozent');
+        let pes = document.getElementsByClassName('party_percent');
         for (let i = 0; i < pes.length; ++i)
             pes[i]
                 .onkeyup = register ? (() => this.recalcAndShow()) : (() => 0);
-        let fes = document.getElementsByClassName('farbindex');
-        for (let i = 0; i < fes.length; ++i)
-            fes[i]
-                .onchange = register ? (() => this.recalcAndShow()) : (() => 0);
         if (register)
             this.recalcAndShow();
     }
@@ -264,10 +315,11 @@ class KoasSite {
         let outputdiv = document.getElementById(this.outputdivid);
         let ppl = new ParteiList();
         const tab = document.getElementById(this.inputdivid + '_tab');
-        for (let i = 0, row; row = tab.rows[i]; i++) {
-            const hn = row.getElementsByClassName('parteiname');
-            const hp = row.getElementsByClassName('prozent');
-            const hc = row.getElementsByClassName('farbindex');
+        const rows = tab.getElementsByClassName('party_row');
+        for (let i = 0; i < rows.length; ++i) {
+            const hn = rows[i].getElementsByClassName('party_name');
+            const hp = rows[i].getElementsByClassName('party_percent');
+            const hc = rows[i].getElementsByClassName('farbindex');
             if (hn.length == 0 || hp.length == 0 || hc.length == 0)
                 continue;
             const name = hn[0].value;
@@ -282,16 +334,16 @@ class KoasSite {
         const correct5 = document.getElementById(this.inputdivid + 'correct5').checked;
         if (correct5)
             ppl.correct5PerzLimit();
-        for (let i = 1, row; row = tab.rows[i]; i++) {
+        for (let i = 0; i < rows.length; ++i) {
             if (i > ppl.list.length)
                 break;
-            const perc = 100 * ppl.list[i - 1].prozent;
-            let e_scaledout = row.getElementsByClassName('scaledout')[0];
+            const perc = 100 * ppl.list[i].prozent;
+            let e_scaledout = rows[i].getElementsByClassName('party_scaledout')[0];
             e_scaledout.innerText = '→ ' + perc.toFixed(1) + ' %';
             if (perc == 0)
-                e_scaledout.classList.add('koaignoredparty');
+                e_scaledout.classList.add('party_ignored');
             else
-                e_scaledout.classList.remove('koaignoredparty');
+                e_scaledout.classList.remove('party_ignored');
         }
         let coas = new PossibleCoalitions(ppl);
         outputdiv.innerHTML = '';
@@ -325,6 +377,8 @@ class KoasSite {
                     ctx.fillRect(x, y, pw, barheight);
                     x += pw;
                 }
+                ctx.fillStyle = 'white';
+                ctx.fillRect(x, y, barwidth - x, barheight);
                 ctx.beginPath();
                 ctx.rect(0, y, barwidth, barheight);
                 ctx.stroke();

@@ -1,0 +1,45 @@
+body {background-color: ivory;}
+h1, h2, div, span {font-family: Arial, Helvetica, sans-serif;}
+
+.party_input {position: relative;}
+.party_table {position: relative;}
+.party_table_header {padding-bottom: 5px;}
+.party_table_header span {font-weight: bold;}
+.party_table > div {position: relative; vertical-align:middle;}
+.party_table div button {position: relative; margin-right: 5px;}
+.party_name, .party_percent, .party_scaledout {margin-left: 5px;}
+.party_name {width: 120px;}
+.party_percent {width: 80px;}
+.party_colorchooser
+{
+  position: absolute;
+  background-color: white;
+  border-radius: 10px;
+  border: 1px solid gray;
+}
+.party_color
+{
+  position: absolute;
+  display: inline-block;
+  border-color: white;
+  border-style: solid;
+  margin: 0px;
+  padding: 0px;
+}
+.party_color_single
+{
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+}
+.party_color:hover {border-color: #cccccc;}
+.party_ignored {color:gray; text-decoration:line-through;}
+
+.butdist {display:inline-block; width: 30px; text-align:center;}
+.koafootnote, .koafootnote a, .koafootnote a:visited
+{
+  color: gray;
+  font-size:8pt;
+  text-decoration: none;
+}
+.koafootnote a:hover {text-decoration: underline;}
