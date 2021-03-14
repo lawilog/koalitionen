@@ -17,12 +17,12 @@ class Partei
 function exampleParteiData() : Partei[]
 {
   return [
-    new Partei("CDU", 22, 0),
-    new Partei("Grüne", 8, 3),
-    new Partei("SPD", 7, 1),
-    new Partei("Linke", 31, 2),
-    new Partei("AfD", 23, 6),
-    new Partei("FDP", 6, 5)
+    new Partei("CDU", 33, 0),
+    new Partei("Grüne", 19, 3),
+    new Partei("SPD", 16, 1),
+    new Partei("Linke", 8, 2),
+    new Partei("AfD", 10, 6),
+    new Partei("FDP", 8, 5)
   ];
 }
 
