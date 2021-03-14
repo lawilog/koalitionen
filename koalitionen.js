@@ -150,6 +150,60 @@ function addSpace(parent, width) {
     space.style.width = width + 'px';
     space.style.display = 'inline-block';
 }
+function keepGoodChars(str) {
+    return str.replace(/[^A-Za-z +/]/g, '');
+}
+function shareLink(partylist) {
+    const reflist = exampleParteiData();
+    let percentages = [];
+    let names = [];
+    let colorindice = [];
+    for (let i = 0; i < partylist.length; ++i) {
+        percentages.push(partylist[i].prozent.toString());
+        names.push(i < reflist.length && partylist[i].name == reflist[i].name
+            ? '' : partylist[i].name);
+        colorindice.push((i < reflist.length
+            && partylist[i].colorindex == reflist[i].colorindex
+            ? '' : partylist[i].colorindex).toString());
+    }
+    let url = window.location.protocol + '//' + window.location.hostname + window.location.pathname + '?p=' + percentages.join(',');
+    if (!names.every(n => n == ''))
+        url += '&n=' + names.map(n => encodeURIComponent(keepGoodChars(n))).join(',');
+    if (!colorindice.every(ci => ci == ''))
+        url += '&c=' + colorindice.join(',');
+    return url;
+}
+function parteiDataOfQuery(querystr) {
+    let ppl = [];
+    const getQueryParam = (qstr, param) => {
+        const rx = new RegExp('[?&]' + param + '(=([^&#]*)|&|#|$)');
+        const results = rx.exec(qstr);
+        if (!results || !results[2])
+            return '';
+        return decodeURIComponent(results[2].replace(/\+/g, ' '));
+    };
+    const ps = getQueryParam(querystr, 'p');
+    const reflist = exampleParteiData();
+    if (ps == '')
+        return reflist;
+    const percentages = ps.split(',');
+    const names = getQueryParam(querystr, 'n').split(',');
+    const colorindice = getQueryParam(querystr, 'c').split(',');
+    for (let i = 0; i < percentages.length; ++i) {
+        let n = 'Partei ' + (i + 1).toString();
+        let c = i % koaltionen_party_colors.length;
+        if (i < reflist.length) {
+            n = reflist[i].name;
+            c = reflist[i].colorindex;
+        }
+        if (i < names.length && names[i] != '')
+            n = names[i];
+        if (i < colorindice.length && colorindice[i] != '')
+            c = Number(colorindice[i]);
+        ppl.push(new Partei(n, Number(percentages[i]), c));
+    }
+    return ppl;
+}
 class KoasSite {
     constructor(inputdivid, outputdivid) {
         this.inputdivid = inputdivid;
@@ -158,7 +212,12 @@ class KoasSite {
     build() {
         let inputdiv = document.getElementById(this.inputdivid);
         inputdiv.classList.add('party_input');
-        const startdata = exampleParteiData();
+        let startdata = [];
+        const qpos = window.location.href.indexOf('?');
+        if (qpos == -1)
+            startdata = exampleParteiData();
+        else
+            startdata = parteiDataOfQuery(window.location.href.substr(qpos));
         this.buildInputTable(startdata);
         let correct5 = inputdiv.appendChild(document.createElement('input'));
         correct5.type = 'checkbox';
@@ -168,9 +227,7 @@ class KoasSite {
         let check5label = inputdiv.appendChild(document.createElement('label'));
         check5label.htmlFor = correct5.id;
         check5label.innerText = ' 5%-Hürde';
-        let spandist1 = inputdiv.appendChild(document.createElement('span'));
-        spandist1.innerText = '|';
-        spandist1.className = 'butdist';
+        inputdiv.appendChild(document.createElement('br'));
         let autoupd = inputdiv.appendChild(document.createElement('input'));
         autoupd.type = 'checkbox';
         autoupd.id = this.inputdivid + 'autoupd';
@@ -182,7 +239,9 @@ class KoasSite {
         let spandist2 = inputdiv.appendChild(document.createElement('span'));
         spandist2.innerText = '|';
         spandist2.className = 'butdist';
-        let updbutton = inputdiv.appendChild(document.createElement('button'));
+        let updbutton = inputdiv.appendChild(document.createElement('span'));
+        updbutton.classList.add('party_button', 'button');
+        updbutton.style.width = '150px';
         updbutton.innerText = 'jetzt neu berechnen';
         updbutton.onclick = () => this.recalcAndShow();
         inputdiv.appendChild(document.createElement('br'));
@@ -216,7 +275,7 @@ class KoasSite {
         row_f.className = 'party_table_footer';
         let cellpm = row_f.appendChild(document.createElement('span'));
         let buttom_p = cellpm.appendChild(document.createElement('span'));
-        buttom_p.className = 'party_button';
+        buttom_p.classList.add('party_button', 'button');
         buttom_p.innerText = '✚';
         buttom_p.onclick = () => this.addRow();
         addSpace(row_f, 280);
@@ -229,7 +288,7 @@ class KoasSite {
     buildInputTableRow(row, party) {
         row.className = 'party_row';
         let buttom_m = row.appendChild(document.createElement('span'));
-        buttom_m.className = 'party_button';
+        buttom_m.classList.add('party_button', 'button');
         buttom_m.innerText = '✘';
         buttom_m.onclick = () => this.removeRow(row);
         let strike = row.appendChild(document.createElement('span'));
@@ -251,6 +310,10 @@ class KoasSite {
         divcol.style.left = '0px';
         spancol.onclick = () => { divcol.style.display = 'block'; };
         divcol.onmouseleave = () => { divcol.style.display = 'none'; };
+        document.addEventListener('click', function (event) {
+            if (!cellcol.contains(event.target))
+                divcol.style.display = 'none';
+        });
         let inputname = row.appendChild(document.createElement('input'));
         inputname.type = 'text';
         inputname.classList.add('party_name');
@@ -316,6 +379,12 @@ class KoasSite {
     }
     recalcAndShow() {
         let outputdiv = document.getElementById(this.outputdivid);
+        outputdiv.innerHTML = '';
+        let divshare = outputdiv.appendChild(document.createElement('div'));
+        divshare.className = 'koa_share';
+        let ashare = divshare.appendChild(document.createElement('a'));
+        ashare.className = 'ashare';
+        ashare.innerText = '[Sharelink zu diesen Ergebnissen]';
         let ppl = new ParteiList();
         const tab = document.getElementById(this.inputdivid + '_tab');
         const rows = tab.getElementsByClassName('party_row');
@@ -330,6 +399,7 @@ class KoasSite {
             const colorindex = Number(hc[0].value);
             ppl.list.push(new Partei(name, prozent, colorindex));
         }
+        ashare.href = shareLink(ppl.list);
         if (!ppl.scaleProz()) {
             outputdiv.innerText = 'Bitte nur Zahlen als Eingabe verwenden.';
             return;
@@ -349,10 +419,9 @@ class KoasSite {
                 e_scaledout.classList.remove('party_ignored');
         }
         let coas = new PossibleCoalitions(ppl);
-        outputdiv.innerHTML = '';
         let outcan = outputdiv.appendChild(document.createElement('canvas'));
         outcan.id = this.outputdivid + '_canvas';
-        const barwidth = 400;
+        const barwidth = 300;
         const descrwidth = 300;
         const barheight = 20;
         const ybarstart = 30;
@@ -363,7 +432,8 @@ class KoasSite {
         const fontdescrheight = 14;
         const fontdescr = fontdescrheight + 'px Arial';
         const fonthead = '20px Arial';
-        outcan.width = barwidth + descrwidth;
+        const maxfraction = ((coas.koas.length > 0 && coas.koas[0].sumproz < 90) ? (coas.koas[0].sumproz + 10) : 100) / 100;
+        outcan.width = barwidth * maxfraction + descrwidth;
         outcan.height = ybarstart + ynonkoadist + ynonkoabardist + (barheight + ybardistance) * (coas.koas.length + coas.nonkoas.length);
         let ctx = outcan.getContext('2d');
         ctx.font = fonthead;
@@ -381,12 +451,12 @@ class KoasSite {
                     x += pw;
                 }
                 ctx.fillStyle = 'white';
-                ctx.fillRect(x, y, barwidth - x, barheight);
+                ctx.fillRect(x, y, barwidth * maxfraction - x, barheight);
                 ctx.beginPath();
-                ctx.rect(0, y, barwidth, barheight);
+                ctx.rect(0, y, barwidth * maxfraction, barheight);
                 ctx.stroke();
                 ctx.fillStyle = 'black';
-                ctx.fillText(koa.humanReadableDescription(coas.partylist), barwidth + xdescrdist, y + barheight - fontdescrheight / 2);
+                ctx.fillText(koa.humanReadableDescription(coas.partylist), barwidth * maxfraction + xdescrdist, y + barheight - fontdescrheight / 2);
                 y += barheight + ybardistance;
             }
             ctx.lineWidth = 3;

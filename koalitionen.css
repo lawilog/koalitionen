@@ -7,15 +7,12 @@ div, span {font-size: 16px;}
 .party_table_header {padding-bottom: 5px;}
 .party_table_header span {font-weight: bold;}
 .party_table > div {position: relative; vertical-align:middle;}
-.party_button
+.party_input .button
 {
   position: relative;
   display: inline-block;
-  width:16px;
   height:16px;
   line-height: 16px;
-  margin-right: 5px;
-  padding: 5px;
   border: 1px solid gray;
   border-radius: 6px;
   font-size: 12px;
@@ -23,6 +20,12 @@ div, span {font-size: 16px;}
   cursor: pointer;
   vertical-align: middle;
   text-align: center;
+  padding: 5px;
+}
+.party_button
+{
+  width:16px;
+  margin-right: 5px;
 }
 .party_button:hover {background-color: #aaaaaa;}
 .party_button:hover + .party_strike {display: inline-block;}
@@ -78,3 +81,12 @@ div, span {font-size: 16px;}
   text-decoration: none;
 }
 .koafootnote a:hover {text-decoration: underline;}
+
+h2 {margin-top:15px; margin-bottom: 3px;}
+.koa_share {margin-bottom: 10px;}
+.koa_share a
+{
+  text-decoration: none;
+  color: black;
+}
+.koa_share a:hover {text-decoration: underline;}

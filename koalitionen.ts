@@ -226,6 +226,82 @@ function addSpace(parent : HTMLElement, width : number)
   space.style.display = 'inline-block';
 }
 
+function keepGoodChars(str : string) : string
+{
+  return str.replace(/[^A-Za-z +/]/g, '');
+}
+
+function shareLink(partylist : Partei[]) : string
+{
+  const reflist = exampleParteiData();
+  let percentages : string[] = [];
+  let names : string[] = [];
+  let colorindice : string[] = [];
+  for(let i = 0; i < partylist.length; ++i)
+  {
+    percentages.push(partylist[i].prozent.toString());
+    names.push(i < reflist.length && partylist[i].name == reflist[i].name
+      ? '' : partylist[i].name
+    );
+    colorindice.push((i < reflist.length
+        && partylist[i].colorindex == reflist[i].colorindex
+        ? '' : partylist[i].colorindex).toString()
+    );
+  }
+  let url = window.location.protocol + '//' + window.location.hostname + window.location.pathname + '?p=' + percentages.join(',');
+
+  if(! names.every(n => n==''))
+    url += '&n=' + names.map(n => encodeURIComponent(keepGoodChars(n))).join(',');
+  
+  if(! colorindice.every(ci => ci==''))
+    url += '&c=' + colorindice.join(',');
+
+  return url;
+}
+
+function parteiDataOfQuery(querystr : string) : Partei[]
+{
+  let ppl : Partei[] = [];
+
+  const getQueryParam = (qstr : string, param : string) => {
+    const rx = new RegExp('[?&]' + param + '(=([^&#]*)|&|#|$)');
+    const results = rx.exec(qstr);
+    if(!results || !results[2])
+      return '';
+    
+    return decodeURIComponent(results[2].replace(/\+/g, ' '));
+  };
+  const ps = getQueryParam(querystr, 'p');
+  const reflist = exampleParteiData();
+  if(ps == '')
+    return reflist;
+
+  const percentages = ps.split(',');
+  const names = getQueryParam(querystr, 'n').split(',');
+  const colorindice = getQueryParam(querystr, 'c').split(',');
+  for(let i = 0; i < percentages.length; ++i)
+  {
+    let n = 'Partei '+(i+1).toString();
+    let c = i % koaltionen_party_colors.length;
+
+    if(i < reflist.length)
+    {
+      n = reflist[i].name;
+      c = reflist[i].colorindex;
+    }
+    
+    if(i < names.length && names[i] != '')
+      n = names[i];
+    
+    if(i < colorindice.length && colorindice[i] != '')
+      c = Number(colorindice[i]);
+
+    ppl.push(new Partei(n, Number(percentages[i]), c));
+  }
+
+  return ppl;
+}
+
 class KoasSite
 {
   inputdivid : string;
@@ -242,7 +318,13 @@ class KoasSite
     let inputdiv = document.getElementById(this.inputdivid);
     inputdiv.classList.add('party_input');
 
-    const startdata = exampleParteiData();
+    let startdata : Partei[] = [];
+    const qpos = window.location.href.indexOf('?');
+    if(qpos == -1)
+      startdata = exampleParteiData();
+    else
+      startdata = parteiDataOfQuery(window.location.href.substr(qpos));
+    
     this.buildInputTable(startdata);
 
     let correct5 = inputdiv.appendChild(document.createElement('input'));
@@ -255,10 +337,10 @@ class KoasSite
     check5label.htmlFor = correct5.id;
     check5label.innerText = ' 5%-Hürde';
 
-    //inputdiv.appendChild(document.createElement('br'));
-    let spandist1 = inputdiv.appendChild(document.createElement('span'));
-    spandist1.innerText = '|';
-    spandist1.className = 'butdist';
+    inputdiv.appendChild(document.createElement('br'));
+    // let spandist1 = inputdiv.appendChild(document.createElement('span'));
+    // spandist1.innerText = '|';
+    // spandist1.className = 'butdist';
 
     let autoupd = inputdiv.appendChild(document.createElement('input'));
     autoupd.type = 'checkbox';
@@ -275,7 +357,9 @@ class KoasSite
     spandist2.innerText = '|';
     spandist2.className = 'butdist';
 
-    let updbutton = inputdiv.appendChild(document.createElement('button'));
+    let updbutton = inputdiv.appendChild(document.createElement('span'));
+    updbutton.classList.add('party_button', 'button');
+    updbutton.style.width = '150px';
     updbutton.innerText = 'jetzt neu berechnen';
     updbutton.onclick = () => this.recalcAndShow();
 
@@ -315,7 +399,7 @@ class KoasSite
     row_f.className = 'party_table_footer';
     let cellpm = row_f.appendChild(document.createElement('span'));
     let buttom_p = cellpm.appendChild(document.createElement('span'));
-    buttom_p.className = 'party_button';
+    buttom_p.classList.add('party_button', 'button')
     buttom_p.innerText = '✚';
     buttom_p.onclick = () => this.addRow();
 
@@ -332,7 +416,7 @@ class KoasSite
   {
     row.className = 'party_row';
     let buttom_m = row.appendChild(document.createElement('span'));
-    buttom_m.className = 'party_button';
+    buttom_m.classList.add('party_button', 'button');
     buttom_m.innerText = '✘';
     buttom_m.onclick = () => this.removeRow(row);
 
@@ -358,6 +442,10 @@ class KoasSite
     divcol.style.left = '0px';
     spancol.onclick = () => {divcol.style.display = 'block';};
     divcol.onmouseleave = () => {divcol.style.display = 'none';};
+    document.addEventListener('click', function(event) {
+      if(!cellcol.contains(<Node>event.target)) // this
+        divcol.style.display = 'none';
+    });
 
     let inputname = row.appendChild(document.createElement('input'));
     inputname.type = 'text';
@@ -371,7 +459,8 @@ class KoasSite
 
     let spanout = row.appendChild(document.createElement('span'));
     spanout.classList.add('party_scaledout');
-    // TODO check on mobile, esp. color chooser
+    // TODO link header
+    // TODO favicon
   }
 
   buildColorChooser(parent : HTMLElement, spandisp : HTMLElement, farbindexelem : HTMLInputElement)
@@ -427,6 +516,7 @@ class KoasSite
 
   registerAutorefresh()
   {
+    // TODO also on name change
     const ereg = <HTMLInputElement> document.getElementById(this.inputdivid + 'autoupd');
     const register = ereg.checked;
     let pes = document.getElementsByClassName('party_percent');
@@ -441,6 +531,13 @@ class KoasSite
   recalcAndShow()
   {
     let outputdiv = document.getElementById(this.outputdivid);
+    outputdiv.innerHTML = '';
+
+    let divshare = outputdiv.appendChild(document.createElement('div'));
+    divshare.className = 'koa_share';
+    let ashare = divshare.appendChild(document.createElement('a'));
+    ashare.className = 'ashare';
+    ashare.innerText = '[Sharelink zu diesen Ergebnissen]';
 
     let ppl = new ParteiList();
     const tab = <HTMLDivElement>document.getElementById(this.inputdivid + '_tab');
@@ -458,6 +555,7 @@ class KoasSite
       const colorindex = Number((<HTMLInputElement> hc[0]).value);
       ppl.list.push(new Partei(name, prozent, colorindex));
     }
+    ashare.href = shareLink(ppl.list);
 
     if(! ppl.scaleProz())
     {
@@ -486,10 +584,9 @@ class KoasSite
     let coas = new PossibleCoalitions(ppl);
     // coas.print();
 
-    outputdiv.innerHTML = '';
     let outcan = outputdiv.appendChild(document.createElement('canvas'));
     outcan.id = this.outputdivid + '_canvas';
-    const barwidth = 400;
+    const barwidth = 300;
     const descrwidth = 300;
     const barheight = 20;
     const ybarstart = 30;
@@ -500,8 +597,10 @@ class KoasSite
     const fontdescrheight = 14; // px
     const fontdescr = fontdescrheight+'px Arial';
     const fonthead = '20px Arial';
-    outcan.width = barwidth + descrwidth;
+    const maxfraction = ((coas.koas.length > 0 && coas.koas[0].sumproz < 90) ? (coas.koas[0].sumproz + 10) : 100) / 100;
+    outcan.width = barwidth * maxfraction + descrwidth;
     outcan.height = ybarstart + ynonkoadist + ynonkoabardist + (barheight + ybardistance)*(coas.koas.length + coas.nonkoas.length);
+
     let ctx = outcan.getContext('2d');
 
     ctx.font = fonthead;
@@ -523,14 +622,14 @@ class KoasSite
           x += pw;
         }
         ctx.fillStyle = 'white';
-        ctx.fillRect(x, y, barwidth-x, barheight);
+        ctx.fillRect(x, y, barwidth*maxfraction - x, barheight);
 
         ctx.beginPath();
-        ctx.rect(0, y, barwidth, barheight);
+        ctx.rect(0, y, barwidth*maxfraction, barheight);
         ctx.stroke();
 
         ctx.fillStyle = 'black';
-        ctx.fillText(koa.humanReadableDescription(coas.partylist), barwidth + xdescrdist, y + barheight - fontdescrheight/2);
+        ctx.fillText(koa.humanReadableDescription(coas.partylist), barwidth*maxfraction + xdescrdist, y + barheight - fontdescrheight/2);
 
         y += barheight + ybardistance;
       }
@@ -546,8 +645,6 @@ class KoasSite
     ctx.font = fonthead;
     ctx.fillText('Keine Mehrheit hätten:', 0, yafterkoas); 
     drawkoas(yafterkoas + ynonkoabardist, coas.nonkoas);
-
-    // TODO: share-link
    
     outputdiv.appendChild(document.createElement('hr'));
     let spanfoot = outputdiv.appendChild(document.createElement('span'));
